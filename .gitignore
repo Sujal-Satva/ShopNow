@@ -1,0 +1,29 @@
+# Ignore build results
+bin/
+obj/
+*.user
+*.suo
+
+# Visual Studio files
+.vs/
+*.vscode/
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+
+# User-specific files
+*.DS_Store
+*.sln.docstates
+
+# Log files
+*.log
+
+# ASP.NET Core secrets
+secrets.json
+appsettings.*.json
+
+# Others
+*.cache
+*.dbmdl
