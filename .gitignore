@@ -22,7 +22,7 @@ packages/
 
 # ASP.NET Core secrets
 secrets.json
-appsettings.*.json
+appsettings.json
 
 # Others
 *.cache
