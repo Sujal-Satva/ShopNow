@@ -34,27 +34,29 @@ namespace ShopNow.Controller
             return Ok(response);
         }
 
-        //[HttpPost("refresh")]
-        //public IActionResult Refresh([FromBody] RefreshRequest model)
-        //{
-        //    var response = _authService.ValidateRefreshToken(model.UserId, model.RefreshToken);
-        //    if (!response.Success)
-        //        return BadRequest(response);
+        [HttpPost("refresh")]
+        public async Task<IActionResult> RefreshAsync([FromBody] RefreshTokenRequest model)
+        {
 
-        //    var newRefreshToken = _authService.GenerateRefreshToken();
-        //    var saveResponse = _authService.SaveRefreshToken(model.UserId, newRefreshToken);
+            var response = await _authService.RefreshToken(model);
+            if (response.Status == 200)
+                return Ok(response);
+            else if (response.Status == 401)
+                return Unauthorized(response);
+            else if (response.Status == 404)
+                return NotFound(response);
+            else
+                return StatusCode(500, response);
+        }
 
-        //    return Ok(saveResponse);
-        //}
+        [HttpPost("revoke-refresh-token")]
+        public async Task<IActionResult> RevokeRefreshToken([FromBody] RefreshTokenRequest model)
+        {
+            var response =await _authService.RevokeRefreshToken(model);
+            if (response.Status!=200)
+                return BadRequest(response);
 
-        //[HttpPost("revoke-refresh-token")]
-        //public IActionResult RevokeRefreshToken([FromBody] RevokeRefreshRequest model)
-        //{
-        //    var response = _authService.RevokeRefreshToken(model.RefreshToken);
-        //    if (!response.Success)
-        //        return BadRequest(response);
-
-        //    return Ok(response);
-        //}
+            return Ok(response);
+        }
     }
 }

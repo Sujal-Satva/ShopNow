@@ -15,5 +15,10 @@ namespace BusinessLogic.Interfaces
         Task<CommonResponse<LoginResponse>> CreateUser(RegisterRequest request, string roleName);
 
 
+        Task<CommonResponse<LoginResponse>> RefreshToken(RefreshTokenRequest request);
+
+        Task<CommonResponse<string>> RevokeRefreshToken(RefreshTokenRequest request);
+
+
     }
 }

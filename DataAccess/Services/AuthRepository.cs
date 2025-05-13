@@ -80,7 +80,8 @@ namespace DataAccess.Services
                     new SqlParameter("@Username", request.Username),
                     new SqlParameter("@PasswordHash", hashedPassword),
                     new SqlParameter("@Email", request.Username),
-                    new SqlParameter("@NormalizedEmail", request.Username.ToLower()) 
+                    new SqlParameter("@NormalizedEmail", request.Username.ToLower()), 
+                    
                 };
 
                 await AdoHelper.ExecuteNonQueryAsync(connection, insertUserQuery, insertUserParams);
@@ -88,7 +89,7 @@ namespace DataAccess.Services
                 var roleIdParams = new List<SqlParameter> { new SqlParameter("@RoleName", roleName) };
                 var roleId = (string)await AdoHelper.ExecuteScalarAsync(connection, roleIdQuery, roleIdParams);
 
-                
+
                 var assignRoleQuery = @"
                 INSERT INTO AspNetUserRoles (UserId, RoleId)
                 VALUES (@UserId, @RoleId)";
@@ -103,7 +104,6 @@ namespace DataAccess.Services
                 {
                     Id = userId,
                     UserName = request.Username,
-
                 };
 
                 return new CommonResponse<UserWithRole>(201, "User created successfully", createdUser);
@@ -114,44 +114,77 @@ namespace DataAccess.Services
             }
         }
 
+        public async void SaveRefreshToken(string userId, string refreshToken)
+        {
+            var query = @"
+                INSERT INTO RefreshTokens (UserId, Token, CreatedAt, ExpiresAt, IsRevoked) 
+                VALUES (@UserId, @Token, @CreatedAt, @ExpiresAt, 0)";
 
-        public void SaveRefreshToken(string userId, string refreshToken)
+            var parameters = new List<SqlParameter>
             {
-                using var conn = _dbConnectionFactory.CreateConnection();
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = @"INSERT INTO RefreshTokens (UserId, Token, CreatedAt, ExpiresAt, IsRevoked) 
-                                VALUES (@UserId, @Token, @CreatedAt, @ExpiresAt, 0)";
-                cmd.Parameters.AddWithValue("@UserId", userId);
-                cmd.Parameters.AddWithValue("@Token", refreshToken);
-                cmd.Parameters.AddWithValue("@CreatedAt", DateTime.UtcNow);
-                cmd.Parameters.AddWithValue("@ExpiresAt", DateTime.UtcNow.AddDays(Convert.ToDouble(_config["JwtSettings:RefreshTokenExpiryDays"])));
-                conn.Open();
-                cmd.ExecuteNonQuery();
+                new SqlParameter("@UserId", userId),
+                new SqlParameter("@Token", refreshToken),
+                new SqlParameter("@CreatedAt", DateTime.UtcNow),
+                new SqlParameter("@ExpiresAt", DateTime.UtcNow.AddDays(Convert.ToDouble(_config["JwtSettings:RefreshTokenExpiryDays"])))
+            };
+
+            using var connection = _dbConnectionFactory.CreateConnection();
+            await AdoHelper.ExecuteNonQueryAsync(connection, query, parameters);
+        }
+
+        public async Task<bool> ValidateRefreshToken(string refreshToken)
+        {
+            var query = @"
+                SELECT COUNT(*) FROM RefreshTokens 
+                WHERE Token = @Token AND IsRevoked = 0 AND ExpiresAt > GETUTCDATE()";
+
+            var parameters = new List<SqlParameter>
+            {
+                new SqlParameter("@Token", refreshToken)
+            };
+
+            using var connection = _dbConnectionFactory.CreateConnection();
+            var result =await AdoHelper.ExecuteScalarAsync(connection, query, parameters);
+            return (int)result > 0;
+        }
+
+        public async Task<bool> RevokeRefreshToken(string refreshToken)
+        {
+            var query = @"UPDATE RefreshTokens SET IsRevoked = 1 WHERE Token = @Token";
+            var parameters = new List<SqlParameter> { new SqlParameter("@Token", refreshToken) };
+
+            using var connection = _dbConnectionFactory.CreateConnection();
+            var result=await AdoHelper.ExecuteNonQueryAsync(connection, query, parameters);
+            return (int)result > 0;
+        }
+
+        public async Task<UserWithRole> GetUserById(string userId)
+        {
+            try
+            {
+                var query = @"
+                    SELECT u.*, r.Name AS RoleName
+                    FROM AspNetUsers u
+                    INNER JOIN AspNetUserRoles ur ON u.Id = ur.UserId
+                    INNER JOIN AspNetRoles r ON ur.RoleId = r.Id
+                    WHERE u.Id = @UserId";
+
+                var parameters = new List<SqlParameter>
+                {
+                    new SqlParameter("@UserId", userId)
+                };
+
+                using var connection = _dbConnectionFactory.CreateConnection();
+                var users = await AdoHelper.ExecuteReaderListAsync<UserWithRole>(connection, query, parameters);
+
+                return users.FirstOrDefault();
             }
-
-            public bool ValidateRefreshToken(string userId, string refreshToken)
+            catch
             {
-                using var conn = _dbConnectionFactory.CreateConnection();
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = @"SELECT COUNT(*) FROM RefreshTokens 
-                                WHERE UserId = @UserId AND Token = @Token AND IsRevoked = 0 AND ExpiresAt > GETUTCDATE()";
-                cmd.Parameters.AddWithValue("@UserId", userId);
-                cmd.Parameters.AddWithValue("@Token", refreshToken);
-
-                conn.Open();
-                var count = (int)cmd.ExecuteScalar();
-                return count > 0;
-            }
-
-            public void RevokeRefreshToken(string refreshToken)
-            {
-                using var conn = _dbConnectionFactory.CreateConnection();
-                using var cmd = conn.CreateCommand();
-                cmd.CommandText = @"UPDATE RefreshTokens SET IsRevoked = 1 WHERE Token = @Token";
-                cmd.Parameters.AddWithValue("@Token", refreshToken);
-
-                conn.Open();
-                cmd.ExecuteNonQuery();
+                return null;
             }
         }
+
     }
+
+}

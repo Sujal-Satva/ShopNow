@@ -22,7 +22,7 @@ namespace ShopNow.Helper
             }
 
             // Seed Admin user
-            await SeedUserAsync(userManager, "sujalkareliya27@gmail.com", "Admin@123", "Admin");
+            await SeedUserAsync(userManager, "sujalkareliya27@gmail.com", "Sujal@123", "Admin");
 
             //// Seed Seller user
             //await SeedUserAsync(userManager, "seller@shopnow.com", "Seller@123", "Seller");
