@@ -47,11 +47,13 @@ namespace DataAccess.Helper
         public static async Task<int> ExecuteNonQueryAsync(
             SqlConnection connection,
             string query,
-            List<SqlParameter> parameters)
+            List<SqlParameter> parameters,
+            SqlTransaction? transaction = null)
         {
             await using var command = connection.CreateCommand();
             command.CommandText = query;
             command.CommandType = CommandType.Text;
+            command.Transaction = transaction; // Attach transaction if provided
             command.Parameters.AddRange(parameters.ToArray());
 
             if (connection.State != ConnectionState.Open)
@@ -60,14 +62,17 @@ namespace DataAccess.Helper
             return await command.ExecuteNonQueryAsync();
         }
 
+
         public static async Task<object> ExecuteScalarAsync(
             SqlConnection connection,
             string query,
-            List<SqlParameter> parameters)
+            List<SqlParameter> parameters,
+            SqlTransaction? transaction = null)
         {
             await using var command = connection.CreateCommand();
             command.CommandText = query;
             command.CommandType = CommandType.Text;
+            command.Transaction = transaction; // Support transaction
             command.Parameters.AddRange(parameters.ToArray());
 
             if (connection.State != ConnectionState.Open)
@@ -75,5 +80,6 @@ namespace DataAccess.Helper
 
             return await command.ExecuteScalarAsync();
         }
+
     }
 }

@@ -64,6 +64,28 @@ namespace BusinessLogic.Helper
             return (subject, body);
         }
 
+        public static (string subject, string body) GetOrderStatusUpdateEmail(string orderId, string status)
+        {
+            var subject = $"Your Order #{orderId} Status Update";
+            var body = $@"
+            <html>
+            <body style='font-family: Arial, sans-serif; color: #333; background-color: #f9f9f9; padding: 20px;'>
+                <div style='max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; padding: 20px; box-shadow: 0 0 10px rgba(0,0,0,0.1);'>
+                    <h2 style='color: #4CAF50;'>Order Status Update</h2>
+                    <p>Dear Customer,</p>
+                    <p>Your order with ID <strong>{orderId}</strong> has been updated.</p>
+                    <p><strong>New Status:</strong> {status}</p>
+                    <p>Thank you for shopping with us! If you have any questions, feel free to contact our support team.</p>
+                    <br />
+                    <p style='color: #888;'>Regards,<br>The Team</p>
+                </div>
+            </body>
+            </html>";
+
+            return (subject, body);
+        }
+
+
     }
 
 }
